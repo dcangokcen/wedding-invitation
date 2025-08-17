@@ -1,41 +1,83 @@
 import React, { useState } from "react";
+import { storage } from "../firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 function PhotoUpload() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploadedPhotos, setUploadedPhotos] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [progress, setProgress] = useState(0); // % ilerleme
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setSelectedFiles(files);
-    const urls = files.map(file => URL.createObjectURL(file));
-    setPreviewUrls(urls);
+    const filesArr = Array.from(e.target.files || []);
+    setSelectedFiles(filesArr);
+    setPreviewUrls(filesArr.map((f) => URL.createObjectURL(f)));
   };
 
   const handleRemove = (index) => {
-    const newFiles = [...selectedFiles];
-    const newPreviews = [...previewUrls];
-    newFiles.splice(index, 1);
-    newPreviews.splice(index, 1);
-    setSelectedFiles(newFiles);
-    setPreviewUrls(newPreviews);
+    const nf = [...selectedFiles];
+    const np = [...previewUrls];
+    nf.splice(index, 1);
+    np.splice(index, 1);
+    setSelectedFiles(nf);
+    setPreviewUrls(np);
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (selectedFiles.length === 0) {
       alert("Lütfen en az bir fotoğraf seçin!");
       return;
     }
-    setIsUploading(true);
 
-    setTimeout(() => {
-      setUploadedPhotos(prev => [...prev, ...previewUrls]);
+    setIsUploading(true);
+    setProgress(0);
+
+    try {
+      const urls = [];
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const filename = `${Date.now()}_${file.name}`;
+        const objectRef = ref(storage, `uploads/${filename}`);
+
+        // İstersen bucket doğrulaması:
+        // console.log("bucket check:", objectRef.bucket); // ✅ wedding-invitation-d99d6.firebasestorage.app beklenir
+
+        const metadata = { contentType: file.type || "application/octet-stream" };
+        const task = uploadBytesResumable(objectRef, file, metadata);
+
+        await new Promise((resolve, reject) => {
+          task.on(
+            "state_changed",
+            (snap) => {
+              const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+              setProgress(pct);
+            },
+            (err) => {
+              console.error("UPLOAD ERROR:", err?.code, err?.message, err);
+              reject(err);
+            },
+            async () => {
+              const url = await getDownloadURL(task.snapshot.ref);
+              urls.push(url);
+              resolve();
+            }
+          );
+        });
+      }
+
+      setUploadedPhotos((prev) => [...prev, ...urls]);
       setSelectedFiles([]);
       setPreviewUrls([]);
+      setProgress(100);
+      alert("Fotoğraflar Firebase Storage’a yüklendi!");
+    } catch (err) {
+      alert(`Yükleme sırasında hata oluştu.\n${err?.code || ""} ${err?.message || ""}`);
+    } finally {
       setIsUploading(false);
-      alert("Fotoğraflar başarıyla yüklendi (simülasyon).");
-    }, 2000);
+      setTimeout(() => setProgress(0), 800);
+    }
   };
 
   return (
@@ -60,7 +102,7 @@ function PhotoUpload() {
                 <img
                   src={url}
                   alt={`preview-${idx}`}
-                  className="w-full h-24 object-cover rounded-lg shadow-md transition-transform transform group-hover:scale-105"
+                  className="w-full h-24 object-cover rounded-lg shadow-md transition-transform group-hover:scale-105"
                 />
                 <button
                   onClick={() => handleRemove(idx)}
@@ -76,29 +118,22 @@ function PhotoUpload() {
             onClick={handleUpload}
             disabled={isUploading}
             className={`px-6 py-3 rounded-lg text-white font-semibold w-full transition ${
-              isUploading
-                ? "bg-gray-400"
-                : "bg-pink-500 hover:bg-pink-600 shadow-lg hover:shadow-xl"
+              isUploading ? "bg-gray-400" : "bg-pink-500 hover:bg-pink-600 shadow-lg hover:shadow-xl"
             }`}
           >
-            {isUploading ? "Yükleniyor..." : "Fotoğrafları Yükle"}
+            {isUploading ? `Yükleniyor... %${progress}` : "Fotoğrafları Yükle"}
           </button>
         </>
       )}
 
       {uploadedPhotos.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-lg font-semibold text-pink-800 mb-3">
-            Yüklenen Fotoğraflar (Tarayıcıda)
-          </h3>
+          <h3 className="text-lg font-semibold text-pink-800 mb-3">Yüklenen Fotoğraflar</h3>
           <div className="grid grid-cols-3 gap-3">
             {uploadedPhotos.map((url, idx) => (
-              <img
-                key={idx}
-                src={url}
-                alt={`uploaded-${idx}`}
-                className="w-full h-24 object-cover rounded-lg shadow"
-              />
+              <a key={idx} href={url} target="_blank" rel="noreferrer">
+                <img src={url} alt={`uploaded-${idx}`} className="w-full h-24 object-cover rounded-lg shadow" />
+              </a>
             ))}
           </div>
         </div>

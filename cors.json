@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "https://wedding-invitation-d99d6.web.app",
+      "https://wedding-invitation-d99d6.firebaseapp.com",
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ],
+    "method": ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
+    "responseHeader": ["*"],
+    "maxAgeSeconds": 3600
+  }
+]
