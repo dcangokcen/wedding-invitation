@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { storage } from "../firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL, listAll } from "firebase/storage";
 
 function PhotoUpload() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploadedPhotos, setUploadedPhotos] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [progress, setProgress] = useState(0); // % ilerleme
+  const [progress, setProgress] = useState(0);
 
   const handleFileChange = (e) => {
     const filesArr = Array.from(e.target.files || []);
@@ -23,6 +23,21 @@ function PhotoUpload() {
     setSelectedFiles(nf);
     setPreviewUrls(np);
   };
+
+  const fetchAllPhotos = async () => {
+    try {
+      const folderRef = ref(storage, "uploads");
+      const res = await listAll(folderRef);
+      const urls = await Promise.all(res.items.map((item) => getDownloadURL(item)));
+      setUploadedPhotos(urls);
+    } catch (e) {
+      console.error("List error:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllPhotos();
+  }, []);
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
@@ -40,10 +55,6 @@ function PhotoUpload() {
         const file = selectedFiles[i];
         const filename = `${Date.now()}_${file.name}`;
         const objectRef = ref(storage, `uploads/${filename}`);
-
-        // İstersen bucket doğrulaması:
-        // console.log("bucket check:", objectRef.bucket); // ✅ wedding-invitation-d99d6.firebasestorage.app beklenir
-
         const metadata = { contentType: file.type || "application/octet-stream" };
         const task = uploadBytesResumable(objectRef, file, metadata);
 
@@ -54,10 +65,7 @@ function PhotoUpload() {
               const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
               setProgress(pct);
             },
-            (err) => {
-              console.error("UPLOAD ERROR:", err?.code, err?.message, err);
-              reject(err);
-            },
+            (err) => reject(err),
             async () => {
               const url = await getDownloadURL(task.snapshot.ref);
               urls.push(url);
@@ -71,6 +79,7 @@ function PhotoUpload() {
       setSelectedFiles([]);
       setPreviewUrls([]);
       setProgress(100);
+      await fetchAllPhotos();
       alert("Fotoğraflar başarıyla yüklendi!");
     } catch (err) {
       alert(`Yükleme sırasında hata oluştu.\n${err?.code || ""} ${err?.message || ""}`);
@@ -81,18 +90,17 @@ function PhotoUpload() {
   };
 
   return (
-    <div>
+    <div className="min-h-screen p-6" style={{ fontFamily: "Georgia, serif" }}>
       <h2 className="text-3xl font-extrabold mb-6 text-center text-[#9CAF88]">
         Düğün Hatırası Yükle
-    </h2>
-
+      </h2>
 
       <input
         type="file"
         accept="image/*"
         multiple
         onChange={handleFileChange}
-        className="mb-4 block w-full text-sm text-gray-700 bg-green-50 border border-green-300 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-400"
+        className="mb-4 block w-full text-sm text-gray-700 bg-[#E6F0E6] border border-[#9CAF88] rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9CAF88]"
       />
 
       {previewUrls.length > 0 && (
@@ -107,7 +115,7 @@ function PhotoUpload() {
                 />
                 <button
                   onClick={() => handleRemove(idx)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-80 hover:opacity-100"
+                  className="absolute top-1 right-1 bg-[#9CAF88] text-white rounded-full w-6 h-6 text-xs opacity-80 hover:opacity-100"
                 >
                   ×
                 </button>
@@ -119,7 +127,9 @@ function PhotoUpload() {
             onClick={handleUpload}
             disabled={isUploading}
             className={`px-6 py-3 rounded-lg text-white font-semibold w-full transition ${
-              isUploading ? "bg-gray-400" : "bg-[#9CAF88] hover:bg-[#7F9E72] shadow-lg hover:shadow-xl"
+              isUploading
+                ? "bg-gray-400"
+                : "bg-[#9CAF88] hover:bg-[#7F9E72] shadow-lg hover:shadow-xl"
             }`}
           >
             {isUploading ? `Yükleniyor... %${progress}` : "Fotoğrafları Yükle"}
@@ -127,18 +137,25 @@ function PhotoUpload() {
         </>
       )}
 
-      {uploadedPhotos.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold text-center text-[#9CAF88] mb-3">Yüklenen Fotoğraflar</h3>
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-[#476347] mb-3">Tüm Fotoğraflar</h3>
+        {uploadedPhotos.length === 0 ? (
+          <p className="text-sm text-gray-600">Henüz fotoğraf yok.</p>
+        ) : (
           <div className="grid grid-cols-3 gap-3">
             {uploadedPhotos.map((url, idx) => (
               <a key={idx} href={url} target="_blank" rel="noreferrer">
-                <img src={url} alt={`uploaded-${idx}`} className="w-full h-24 object-cover rounded-lg shadow" />
+                <img
+                  src={url}
+                  alt={`uploaded-${idx}`}
+                  className="w-full h-24 object-cover rounded-lg shadow"
+                  loading="lazy"
+                />
               </a>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

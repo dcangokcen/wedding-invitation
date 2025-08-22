@@ -2,6 +2,7 @@ import React from "react";
 import PhotoUpload from "./components/PhotoUpload";
 import backgroundImage from "./assets/background.png"; // Arka plan görseli
 
+
 function App() {
   return (
     <div
