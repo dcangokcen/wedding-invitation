@@ -11,12 +11,12 @@ function App() {
       {/* Üstte Düğün Başlığı */}
       <header className="w-full py-6 bg-black bg-opacity-40 text-center">
   <h1
-    className="text-5xl md:text-6xl text-pink-100 drop-shadow-lg"
+    className="text-5xl md:text-6xl text-green-100 drop-shadow-lg"
     style={{ fontFamily: "'Great Vibes', cursive" }}
   >
     Nimet & Doğuş Can
   </h1>
-  <div className="mt-3 mx-auto w-32 h-1 bg-pink-300 rounded"></div>
+  <div className="mt-3 mx-auto w-32 h-1 bg-green-300 rounded"></div>
 </header>
 
       {/* Yarı saydam yükleme alanı */}

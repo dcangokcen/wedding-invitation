@@ -16,6 +16,12 @@
       "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512"
+    },
+    {
+      "short_name": "Nimet & Can",
+      "name": "Nimet & Can",
+      "theme_color": "#ffffff",
+      "background_color": "#ffffff"
     }
   ],
   "start_url": ".",

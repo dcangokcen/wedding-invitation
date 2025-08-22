@@ -71,7 +71,7 @@ function PhotoUpload() {
       setSelectedFiles([]);
       setPreviewUrls([]);
       setProgress(100);
-      alert("Fotoğraflar Firebase Storage’a yüklendi!");
+      alert("Fotoğraflar başarıyla yüklendi!");
     } catch (err) {
       alert(`Yükleme sırasında hata oluştu.\n${err?.code || ""} ${err?.message || ""}`);
     } finally {
@@ -82,16 +82,17 @@ function PhotoUpload() {
 
   return (
     <div>
-      <h2 className="text-3xl font-extrabold mb-6 text-center text-pink-700">
+      <h2 className="text-3xl font-extrabold mb-6 text-center text-[#9CAF88]">
         Düğün Hatırası Yükle
-      </h2>
+    </h2>
+
 
       <input
         type="file"
         accept="image/*"
         multiple
         onChange={handleFileChange}
-        className="mb-4 block w-full text-sm text-gray-700 bg-pink-50 border border-pink-300 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-pink-400"
+        className="mb-4 block w-full text-sm text-gray-700 bg-green-50 border border-green-300 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-400"
       />
 
       {previewUrls.length > 0 && (
@@ -118,7 +119,7 @@ function PhotoUpload() {
             onClick={handleUpload}
             disabled={isUploading}
             className={`px-6 py-3 rounded-lg text-white font-semibold w-full transition ${
-              isUploading ? "bg-gray-400" : "bg-pink-500 hover:bg-pink-600 shadow-lg hover:shadow-xl"
+              isUploading ? "bg-gray-400" : "bg-[#9CAF88] hover:bg-[#7F9E72] shadow-lg hover:shadow-xl"
             }`}
           >
             {isUploading ? `Yükleniyor... %${progress}` : "Fotoğrafları Yükle"}
@@ -128,7 +129,7 @@ function PhotoUpload() {
 
       {uploadedPhotos.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-lg font-semibold text-pink-800 mb-3">Yüklenen Fotoğraflar</h3>
+          <h3 className="text-lg font-semibold text-center text-[#9CAF88] mb-3">Yüklenen Fotoğraflar</h3>
           <div className="grid grid-cols-3 gap-3">
             {uploadedPhotos.map((url, idx) => (
               <a key={idx} href={url} target="_blank" rel="noreferrer">
